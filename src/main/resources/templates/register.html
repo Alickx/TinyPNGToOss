@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>TinytoOss</title>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            crossorigin="anonymous"></script>
+    <link th:href="@{/css/register.css}" href="../static/css/register.css" rel="stylesheet">
+    <script th:src="@{/js/register.js}" src="../static/js/register.js"></script>
+</head>
+<body>
+<!--头部导航-->
+<div th:replace="common/header :: header"></div>
+<!--内容区-->
+<main>
+<div class="container d-flex align-items-center justify-content-center h-75">
+    <div class="registerForm shadow">
+        <div class="text-center">
+            <h1>TinyToOss</h1>
+        </div>
+        <form name="loginForm" th:action="@{/user/register}" method="post">
+            <div class="form-floating">
+                <input type="text" name="accountName" class="form-control" id="accountName" placeholder="用户名">
+                <label for="accountName" class="form-label">用户名</label>
+                <div id="accountNameValidation"></div>
+            </div>
+            <div class="form-floating">
+                <input type="password" name="accountPassword" class="form-control" id="accountPassword"
+                       placeholder="密码">
+                <label for="accountPassword">密码</label>
+                <div id="accountPasswordValidation"></div>
+            </div>
+            <div class="form-floating">
+                <input type="password" name="accountPasswordAgain" class="form-control" id="accountPasswordAgain"
+                       placeholder="密码">
+                <label for="accountPasswordAgain">再次确认密码</label>
+                <div id="accountPasswordAgainValidation"></div>
+            </div>
+            <div class="form-group mt-4">
+                <div class="d-flex">
+                    <input id="verificationCode" type="text" autocomplete="off" name="verificationCode"
+                           class="form-control w-50">
+                    <img id="getVerificationCode" onclick="uploadLoginValidateCode()"
+                         th:src="@{/api/getVerificationCode}"
+                         height="35px"
+                         alt="验证码"
+                         class="w-50 ms-1"
+                    >
+                </div>
+                <div id="verificationValidation" class="d-block"></div>
+            </div>
+            <div class="d-grid mt-3 form-group">
+                <button class="btn btn-primary btn-lg btn-block" id="RegisterButton" type="button">注册</button>
+            </div>
+        </form>
+        <span class="text-danger" id="errorMsg"></span>
+    </div>
+</div>
+</main>
+</body>
+</html>

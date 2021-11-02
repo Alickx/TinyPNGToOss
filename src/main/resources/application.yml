@@ -1,0 +1,21 @@
+server:
+  port: 9451
+
+spring:
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+  datasource:
+    url: jdbc:mysql://localhost:3306/tiny_to_oss
+    username: root
+    password: root
+  servlet:
+    multipart:
+      max-file-size: 5MB
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+
+
