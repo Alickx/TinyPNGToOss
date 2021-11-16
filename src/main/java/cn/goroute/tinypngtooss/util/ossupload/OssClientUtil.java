@@ -3,6 +3,7 @@ package cn.goroute.tinypngtooss.util.ossupload;
 
 import cn.goroute.tinypngtooss.exception.ServiceException;
 import cn.goroute.tinypngtooss.pojo.TUser;
+import cn.goroute.tinypngtooss.util.encryption.MyEncryption;
 import cn.hutool.core.io.FileUtil;
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
@@ -25,7 +26,9 @@ public class OssClientUtil {
         String endpoint = user.getEndpoint();
         // 阿里云账号AccessKey拥有所有API的访问权限，风险很高。强烈建议您创建并使用RAM用户进行API访问或日常运维，请登录RAM控制台创建RAM用户。
         String accessKeyId = user.getAccessId();
-        String accessKeySecret = user.getAccessKey();
+        String accessKey = user.getAccessKey();
+        String accessKeySecret = MyEncryption.decryptStr(accessKey);
+
         String dir = user.getDir();
         String bucketName = user.getBucket();
 

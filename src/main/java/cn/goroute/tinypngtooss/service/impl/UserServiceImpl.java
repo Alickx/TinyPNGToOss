@@ -11,6 +11,7 @@ import cn.goroute.tinypngtooss.pojo.model.UserOssInfoModel;
 import cn.goroute.tinypngtooss.pojo.model.UserRegisterModel;
 import cn.goroute.tinypngtooss.service.UserService;
 import cn.goroute.tinypngtooss.util.DescribeCaptchaResult;
+import cn.goroute.tinypngtooss.util.encryption.MyEncryption;
 import cn.goroute.tinypngtooss.util.resresult.RespResult;
 import cn.goroute.tinypngtooss.util.resresult.Result;
 import cn.hutool.core.date.DateTime;
@@ -166,7 +167,10 @@ public class UserServiceImpl implements UserService {
 
         String accessId = userOssInfoModel.getAccessId();
 
+        //对accessKey进行加密
         String accessKey = userOssInfoModel.getAccessKey();
+
+        String encryptAccessKey = MyEncryption.encryptHex(accessKey);
 
         String dir = userOssInfoModel.getDir();
 
@@ -178,7 +182,7 @@ public class UserServiceImpl implements UserService {
 
         TUser user = new TUser();
         user.setAccessId(accessId)
-                .setAccessKey(accessKey)
+                .setAccessKey(encryptAccessKey)
                 .setDir(dir)
                 .setBucket(bucket)
                 .setEndpoint(endpoint);
