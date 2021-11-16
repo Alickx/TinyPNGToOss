@@ -1,4 +1,4 @@
-package cn.goroute.tinypngtooss.util;
+package cn.goroute.tinypngtooss.util.ossupload;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.file.FileNameUtil;
@@ -14,6 +14,7 @@ import java.net.URLConnection;
  * @Author Alickx
  * @Date 2021/10/24 9:06
  */
+
 public class DownloadImgUtil {
 
     /**

@@ -1,4 +1,4 @@
-package cn.goroute.tinypngtooss.util;
+package cn.goroute.tinypngtooss.util.ossupload;
 
 
 import cn.goroute.tinypngtooss.exception.ServiceException;
@@ -19,7 +19,7 @@ import java.io.File;
  */
 public class OssClientUtil {
 
-    public static String uploadImageToOss(String filePath, String fileName, TUser user) {
+    public static String uploadImageToOss(String filePath,String fileName, TUser user) {
 
         // yourEndpoint填写Bucket所在地域对应的Endpoint。以华东1（杭州）为例，Endpoint填写为https://oss-cn-hangzhou.aliyuncs.com。
         String endpoint = user.getEndpoint();
@@ -43,11 +43,11 @@ public class OssClientUtil {
         // 上传文件。
         try {
             ossClient.putObject(putObjectRequest);
-
-
         } catch (OSSException | ClientException e) {
+            FileUtil.del(filePath);
             throw new ServiceException("Oss信息填写错误");
         }
+
 
         // 关闭OSSClient。
         ossClient.shutdown();
@@ -55,9 +55,7 @@ public class OssClientUtil {
 
         FileUtil.del(filePath);
 
-        String ossImageFileUrl = "https://"+bucketName+"."+endpoint+"/"+dir+"/"+fileName;
-
-        return ossImageFileUrl;
+        return "https://"+bucketName+"."+endpoint+"/"+dir+"/"+fileName;
     }
 
 }

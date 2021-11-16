@@ -2,6 +2,7 @@ package cn.goroute.tinypngtooss;
 
 import cn.goroute.tinypngtooss.dao.TUserDao;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
@@ -28,6 +29,16 @@ class TinyPngToOssApplicationTests {
         String PROJECT_PATH = System.getProperty("user.dir");//项目在硬盘上的基础路径
         System.out.println(PROJECT_PATH);
         System.out.println(PROJECT_PATH + "\\src\\main\\resources\\temp_image");
+
+    }
+
+    @Value("${Tencent.SecretId}")
+    private String id;
+
+    @Test
+    public void getProperties(){
+
+        System.out.println(id);
 
     }
 

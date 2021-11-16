@@ -1,8 +1,7 @@
 package cn.goroute.tinypngtooss.service;
 
+import cn.goroute.tinypngtooss.util.resresult.Result;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 /**
  * @Author Alickx
@@ -14,9 +13,8 @@ public interface ImageService{
     /**
      * 上传文件
      * @param imageFile 图片文件
-     * @param userId 用户的id
      * @return Oss外链
      */
-    List<String> uploadImage(MultipartFile[] imageFile, int userId);
+    Result uploadImage(MultipartFile[] imageFile);
 
 }

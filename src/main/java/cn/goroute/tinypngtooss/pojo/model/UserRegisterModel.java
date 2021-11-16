@@ -3,9 +3,9 @@ package cn.goroute.tinypngtooss.pojo.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.validator.constraints.Length;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 
 /**
@@ -23,30 +23,26 @@ public class UserRegisterModel implements Serializable {
     /**
      * 用户名
      */
-    @NotBlank(message = "账号不能为空")
-    @Length(min = 6,max = 14,message = "账号长度应该为6~14位")
+    @NotBlank(message = "用户账号不能为空")
+    @Pattern(regexp = "^[a-zA-Z][a-zA-Z0-9_]{4,15}$",message = "字母开头，允许5-16字节，允许字母数字下划线")
     private String accountName;
 
     /**
      * 用户密码
      */
     @NotBlank(message = "密码不能为空")
-    @Length(min = 8,max = 16,message = "密码长度应该为8~16位")
+    @Pattern(regexp = "^[a-zA-Z]\\w{5,17}$",message = "以字母开头，长度在6~18之间，只能包含字母、数字和下划线")
     private String accountPassword;
 
     /**
-     * 再次确认密码
+     * 验证码参数
      */
-    @NotBlank(message = "二次密码不能为空")
-    @Length(min = 8,max = 16,message = "密码长度应该为8~16位")
-    private String accountPasswordAgain;
-
+    @NotBlank(message = "验证码参数不能为空")
+    private String ticket;
 
     /**
-     * 验证码
+     * 验证码参数
      */
-    @NotBlank(message = "验证码不能为空")
-    private String verificationCode;
-
-
+    @NotBlank(message = "验证码参数不能为空")
+    private String randstr;
 }

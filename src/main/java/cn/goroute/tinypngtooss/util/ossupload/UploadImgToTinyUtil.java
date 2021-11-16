@@ -1,6 +1,7 @@
-package cn.goroute.tinypngtooss.util;
+package cn.goroute.tinypngtooss.util.ossupload;
 
 import cn.goroute.tinypngtooss.exception.ServiceException;
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSONObject;
 import okhttp3.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,15 +40,14 @@ public class UploadImgToTinyUtil {
                     .build();
             Response response = client.newCall(request).execute();
 
-            ToFileUtil.delteTempFile(file);
+            FileUtil.del(file);
 
             JSONObject respJson = JSONObject.parseObject(Objects.requireNonNull(response.body()).string());
             JSONObject output = JSONObject.parseObject(respJson.getString("output"));
 
             //获得Url，添加进数组
-            String url = output.getString("url");
 
-            return url;
+            return output.getString("url");
         } catch (Exception e) {
             throw new ServiceException(e.getMessage());
         }

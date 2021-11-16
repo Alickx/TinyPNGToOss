@@ -1,5 +1,6 @@
 package cn.goroute.tinypngtooss.service.impl;
 
+import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.goroute.tinypngtooss.dao.TUserDao;
 import cn.goroute.tinypngtooss.exception.ServiceException;
@@ -9,17 +10,23 @@ import cn.goroute.tinypngtooss.pojo.model.UserLoginModel;
 import cn.goroute.tinypngtooss.pojo.model.UserOssInfoModel;
 import cn.goroute.tinypngtooss.pojo.model.UserRegisterModel;
 import cn.goroute.tinypngtooss.service.UserService;
+import cn.goroute.tinypngtooss.util.DescribeCaptchaResult;
+import cn.goroute.tinypngtooss.util.resresult.RespResult;
+import cn.goroute.tinypngtooss.util.resresult.Result;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.extra.servlet.ServletUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.util.Objects;
 
 /**
@@ -33,47 +40,59 @@ public class UserServiceImpl implements UserService {
     @Resource
     TUserDao tUserDao;
 
+    @Autowired
+    DescribeCaptchaResult captchaResult;
+
     @Override
-    public TUser info(int loginId) {
+    public Result getOssInfo() {
+
+        //获取当前登陆的id
+        int loginId = StpUtil.getLoginIdAsInt();
 
         TUser user = tUserDao.selectById(loginId);
 
-        if (user!=null) {
-            return user;
+        if (user != null) {
+
+            UserOssInfoModel ossInfoModel = new UserOssInfoModel();
+
+            BeanUtils.copyProperties(user, ossInfoModel);
+
+            return RespResult.success(ossInfoModel);
+
         } else {
             throw new ServiceException("用户信息获取失败，请联系管理员！");
         }
 
     }
 
+
     @Override
-    public TUser userLogin(UserLoginModel userLoginModel, HttpServletRequest request) {
+    public Result userLogin(UserLoginModel userLoginModel, HttpServletRequest request) {
 
-        //用户名列
-        String columnName = "account_name";
-
-        //获取Session
-        HttpSession session = request.getSession();
-
-        //在Session域对象中获取验证码
-        String requestVerificationCode = (String) session.getAttribute("verificationCode");
-
-        //删除Session中的验证码
-        session.removeAttribute("verificationCode");
 
         String accountName = userLoginModel.getAccountName();
 
         String accountPassword = userLoginModel.getAccountPassword();
 
-        String verificationCode = userLoginModel.getVerificationCode();
+        String ticket = userLoginModel.getTicket();
 
-        //校验验证码
-        if (!Objects.equals(requestVerificationCode, verificationCode)) {
-            throw new ServiceException("用户验证码不正确！");
+        String randstr = userLoginModel.getRandstr();
+
+        String clientIp = ServletUtil.getClientIP(request);
+
+        //核验验证码
+        JSONObject tencentCaptchaResult = captchaResult.getTencentCaptchaResult(ticket, randstr, clientIp);
+
+        int captchaCode = Integer.parseInt(tencentCaptchaResult.getString("CaptchaCode"));
+
+
+        if (captchaCode != 1) {
+            throw new ServiceException("验证码错误！");
         }
 
+
         //校验用户是否存在;
-        TUser tUser = tUserDao.selectOne(new QueryWrapper<TUser>().eq(columnName, accountName));
+        TUser tUser = tUserDao.selectOne(new QueryWrapper<TUser>().eq("account_name", accountName));
         if (tUser == null) {
             throw new ServiceException("用户不存在！");
         }
@@ -83,24 +102,22 @@ public class UserServiceImpl implements UserService {
             throw new ServiceException("用户密码不正确！");
         }
 
+
+        //获取token信息
+        StpUtil.login(tUser.getId());
+        SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
+
+
+
         //校验成功
-        return tUser;
+        return RespResult.success(tokenInfo);
 
     }
 
 
     @Transactional(rollbackFor = {Exception.class})
     @Override
-    public int userRegister(UserRegisterModel userRegisterModel, HttpServletRequest request) {
-
-        //获取Session
-        HttpSession session = request.getSession();
-
-        //在Session域对象中获取验证码
-        String requestVerificationCode = (String) session.getAttribute("verificationCode");
-
-        //删除Session中的验证码
-        session.removeAttribute("verificationCode");
+    public Result userRegister(UserRegisterModel userRegisterModel, HttpServletRequest request) {
 
         //用户名列
         String columnName = "account_name";
@@ -109,20 +126,23 @@ public class UserServiceImpl implements UserService {
 
         String accountPassword = userRegisterModel.getAccountPassword();
 
-        String accountPasswordAgain = userRegisterModel.getAccountPasswordAgain();
+        String ticket = userRegisterModel.getTicket();
 
-        //校验二次密码是否相同
-        if (!accountPassword.equals(accountPasswordAgain)) {
+        String randstr = userRegisterModel.getRandstr();
 
-            throw new ServiceException("用户二次密码不正确");
-        }
-        //校验验证码是否正确
-        if (!Objects.equals(requestVerificationCode, userRegisterModel.getVerificationCode())) {
-            throw new ServiceException("用户验证码不正确！");
+        String clientIp = ServletUtil.getClientIP(request);
+        //核验验证码
+        JSONObject tencentCaptchaResult = captchaResult.getTencentCaptchaResult(ticket, randstr, clientIp);
+
+        int captchaCode = Integer.parseInt(tencentCaptchaResult.getString("CaptchaCode"));
+
+
+        if (captchaCode != 1) {
+            throw new ServiceException("验证码错误！");
         }
 
         //验证是否存在用户,如果不存在则新增
-        if (tUserDao.selectOne(new QueryWrapper<TUser>().eq(columnName, accountName)) == null) {
+        if (tUserDao.selectOne(new QueryWrapper<TUser>().eq("account_name", accountName)) == null) {
             TUser user = new TUser();
             user.setAccountName(accountName);
             user.setAccountPassword(DigestUtil.md5Hex(accountPassword));
@@ -132,17 +152,17 @@ public class UserServiceImpl implements UserService {
             if (insert == 0) {
                 throw new ServiceException("用户数据库注册失败，请联系管理员！");
             } else {
-                return 1;
+                return RespResult.success();
             }
         } else {
-            throw new ServiceException("用户名已存在");
+            throw new ServiceException("用户名已存在！");
         }
     }
 
 
     @Transactional(rollbackFor = {Exception.class})
     @Override
-    public int userOssUpdate(UserOssInfoModel userOssInfoModel) {
+    public Result userOssUpdate(UserOssInfoModel userOssInfoModel) {
 
         String accessId = userOssInfoModel.getAccessId();
 
@@ -166,7 +186,7 @@ public class UserServiceImpl implements UserService {
         int result = tUserDao.update(user, new UpdateWrapper<TUser>().eq("id", loginId));
 
         if (result != 0) {
-            return 1;
+            return RespResult.success();
         } else {
             throw new ServiceException("用户Oss信息数据库更新失败，请联系管理员！");
         }
@@ -175,25 +195,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public int passwordUpdate(PasswordUpdateModel passwordUpdateModel) {
+    public Result passwordUpdate(PasswordUpdateModel passwordUpdateModel) {
 
         //验证二次密码是否正确
         String accountPassword = passwordUpdateModel.getAccountPassword();
 
         String newAccountPassword = passwordUpdateModel.getNewAccountPassword();
 
-        String newAccountPasswordAgain = passwordUpdateModel.getNewAccountPasswordAgain();
-
-
-        if (!newAccountPassword.equals(newAccountPasswordAgain)) {
-            throw new ServiceException("用户二次密码不正确！");
-        }
-
         //验证用户密码是否正确
         int userId = StpUtil.getLoginIdAsInt();
         TUser user = tUserDao.selectById(userId);
 
-        if (!Objects.equals(DigestUtil.md5Hex(accountPassword), user.getAccountPassword())){
+        if (!Objects.equals(DigestUtil.md5Hex(accountPassword), user.getAccountPassword())) {
             throw new ServiceException("用户密码不正确！");
         }
         String newPassword = DigestUtil.md5Hex(newAccountPassword);
@@ -204,9 +217,10 @@ public class UserServiceImpl implements UserService {
 
         //判断结果
         if (i != 0) {
-            return 1;
+            StpUtil.logout(userId);
+            return RespResult.success();
         } else {
-            throw new ServiceException("用户密码数据库更新失败，请联系管理员！");
+            throw new ServiceException("用户密码更新失败，请联系管理员！");
         }
     }
 }

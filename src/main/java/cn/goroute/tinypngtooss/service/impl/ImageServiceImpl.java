@@ -1,13 +1,18 @@
 package cn.goroute.tinypngtooss.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.goroute.tinypngtooss.dao.TUserDao;
 import cn.goroute.tinypngtooss.exception.ServiceException;
 import cn.goroute.tinypngtooss.pojo.TUser;
+import cn.goroute.tinypngtooss.pojo.UploadFile;
 import cn.goroute.tinypngtooss.service.ImageService;
-import cn.goroute.tinypngtooss.util.DownloadImgUtil;
-import cn.goroute.tinypngtooss.util.OssClientUtil;
-import cn.goroute.tinypngtooss.util.UploadImgToTinyUtil;
-import cn.goroute.tinypngtooss.util.ValidationImgUtil;
+import cn.goroute.tinypngtooss.util.ossupload.DownloadImgUtil;
+import cn.goroute.tinypngtooss.util.ossupload.OssClientUtil;
+import cn.goroute.tinypngtooss.util.ossupload.UploadImgToTinyUtil;
+import cn.goroute.tinypngtooss.util.ossupload.ValidationImgUtil;
+import cn.goroute.tinypngtooss.util.resresult.RespResult;
+import cn.goroute.tinypngtooss.util.resresult.Result;
+import cn.hutool.core.util.IdUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,7 +32,7 @@ import java.util.List;
 public class ImageServiceImpl implements ImageService {
 
     @Resource
-    TUserDao UserDao;
+    TUserDao userDao;
 
 
     /**
@@ -37,12 +42,16 @@ public class ImageServiceImpl implements ImageService {
      */
     @Override
     @Transactional(rollbackFor = {Exception.class})
-    public List<String> uploadImage(MultipartFile[] imageFile, int userId) {
+    public Result uploadImage(MultipartFile[] imageFile) {
+
+        //获取userId
+        int userId = StpUtil.getLoginIdAsInt();
+
 
         //对图片文件进行校验
         boolean result = ValidationImgUtil.validationImg(imageFile);
 
-        List<String> urlList = new ArrayList<>();
+        List<UploadFile> urlList = new ArrayList<>();
 
         if (result) {
             //调用方法获取tinypng压缩后的文件外链
@@ -51,25 +60,35 @@ public class ImageServiceImpl implements ImageService {
                     String tinyPngImgUrl = UploadImgToTinyUtil.uploadImageFileToTinyPng(multipartFile);
                     //根据压缩后的链接下载图片,返回下载回来的路径
                     if (tinyPngImgUrl != null) {
-                        String downloadFilePath = DownloadImgUtil.downloadImageFile(tinyPngImgUrl, multipartFile.getOriginalFilename());
+
+                        //随机文件名
+                        String randomFileName = IdUtil.fastSimpleUUID();
+
+                        String downloadFilePath = DownloadImgUtil.downloadImageFile(tinyPngImgUrl,
+                                randomFileName);
 
                         if (downloadFilePath != null) {
                             //获取用户信息
-                            TUser user = UserDao.selectById(userId);
+                            TUser user = userDao.selectById(userId);
 
                             if (user != null) {
 
                                 //把下载的图片文件上传到oss,返回文件外链
 
-                                String ossImgUrl = OssClientUtil.uploadImageToOss(downloadFilePath, multipartFile.getOriginalFilename(), user);
+                                String ossImgUrl = OssClientUtil.uploadImageToOss(downloadFilePath,
+                                        multipartFile.getOriginalFilename(), user);
 
                                 //返回Oss的图片外链
-                                urlList.add(ossImgUrl);
+                                urlList.add(new UploadFile(multipartFile.getOriginalFilename(),ossImgUrl));
                             }
+                        } else {
+                            throw new ServiceException("下载图片文件失败！");
                         }
+                    } else {
+                        throw new ServiceException("tinyPNG压缩出错！");
                     }
                 }
-                return urlList;
+                return RespResult.success(urlList);
             } catch (IOException e) {
                 throw new ServiceException(e.getMessage());
             }
